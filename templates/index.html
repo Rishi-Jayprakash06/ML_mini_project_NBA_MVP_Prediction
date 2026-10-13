@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA MVP Predictor | Machine Learning GUI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Background Glow Accents -->
+  <div class="bg-glow bg-glow-gold"></div>
+  <div class="bg-glow bg-glow-blue"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="trophy-icon">🏆</div>
+        <div>
+          <h1 class="logo-title">NBA MVP PREDICTOR</h1>
+          <p class="logo-subtitle">Machine Learning Classification & Voting Model • 1956–2025 Dataset</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-accent">Random Forest (50% Top-1 / 83.3% Top-3)</span>
+        <span class="badge badge-subtle">10 Feature Vector</span>
+        <span class="badge badge-subtle">70 Historical MVPs</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Presets Bar -->
+  <section class="presets-section">
+    <div class="section-container">
+      <div class="presets-header">
+        <span class="presets-title">⚡ Quick Historical Presets & Benchmarks:</span>
+        <span class="presets-hint">Click any player to auto-fill realistic season stats</span>
+      </div>
+      <div class="presets-carousel" id="presets-container">
+        <!-- Injected via JavaScript -->
+        <button class="preset-btn active" data-preset="jokic_2024">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Nikola Jokić</span>
+          <span class="preset-year">2024</span>
+        </button>
+        <button class="preset-btn" data-preset="sga_2025">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Shai Gilgeous-Alexander</span>
+          <span class="preset-year">2025</span>
+        </button>
+        <button class="preset-btn" data-preset="embiid_2023">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Joel Embiid</span>
+          <span class="preset-year">2023</span>
+        </button>
+        <button class="preset-btn" data-preset="curry_2016">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Stephen Curry</span>
+          <span class="preset-year">2016</span>
+        </button>
+        <button class="preset-btn" data-preset="giannis_2020">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Giannis Antetokounmpo</span>
+          <span class="preset-year">2020</span>
+        </button>
+        <button class="preset-btn" data-preset="jordan_1996">
+          <span class="preset-tag mvp-tag">MVP</span>
+          <span class="preset-name">Michael Jordan</span>
+          <span class="preset-year">1996</span>
+        </button>
+        <button class="preset-btn non-mvp" data-preset="all_star_non_mvp">
+          <span class="preset-tag non-mvp-tag">All-Star</span>
+          <span class="preset-name">Elite Scorer (Non-MVP)</span>
+          <span class="preset-year">2024</span>
+        </button>
+        <button class="preset-btn non-mvp" data-preset="role_player">
+          <span class="preset-tag role-tag">Starter</span>
+          <span class="preset-name">Role Player (Non-MVP)</span>
+          <span class="preset-year">2024</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Left Column: Input Form -->
+    <section class="panel input-panel">
+      <!-- Toolbar / Model Controls -->
+      <div class="panel-header-controls">
+        <div class="control-group">
+          <label for="model-selector">Algorithm:</label>
+          <select id="model-selector" class="select-control">
+            <option value="rf" selected>Random Forest (Recommended - Top Performer)</option>
+            <option value="logreg">Logistic Regression (Linear Baseline)</option>
+            <option value="nb">Gaussian Naive Bayes (Probabilistic)</option>
+            <option value="ensemble">Ensemble Consensus (All 3 Models)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="mode-selector">Training Mode:</label>
+          <select id="mode-selector" class="select-control">
+            <option value="full" selected>All Eras (1956–2025 Full Dataset)</option>
+            <option value="split">Notebook Split (Pre-2020 Train / Post-2020 Test)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-title-bar">
+        <h2>Manual Player Features Input</h2>
+        <div class="live-toggle-group">
+          <label class="switch-label" for="live-predict-toggle">
+            <input type="checkbox" id="live-predict-toggle" checked>
+            <span class="slider-toggle"></span>
+            <span class="switch-text">Live Prediction</span>
+          </label>
+        </div>
+      </div>
+
+      <p class="form-intro">
+        Enter player stats manually via the text boxes or interactive sliders. Every feature displays its strict limits, league averages, and historical MVP benchmarks for reference.
+      </p>
+
+      <form id="prediction-form" onsubmit="event.preventDefault(); window.runPrediction();">
+        <!-- Feature Group: Scoring & Playtime -->
+        <div class="feature-category">
+          <div class="category-title">
+            <span class="cat-icon">🏀</span>
+            <h3>Playing Time & Scoring</h3>
+            <span class="cat-tag">Core MVP Drivers</span>
+          </div>
+
+          <div class="features-grid">
+            <!-- Points Per Game -->
+            <div class="feature-card highlighted-card" id="card-pts_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Points Per Game</span>
+                  <span class="feat-short">PTS</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-pts_per_game" class="num-input" min="0" max="55" step="0.1" value="26.4">
+                  <span class="input-unit">pts</span>
+                </div>
+              </div>
+              <input type="range" id="range-pts_per_game" class="range-slider" min="0" max="55" step="0.1" value="26.4">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 55.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 9.2</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 24.0 – 37.6</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 28.5</span>
+                </div>
+              </div>
+              <div class="feat-tip">Ranked #1 most critical MVP predictor in Random Forest feature importance.</div>
+            </div>
+
+            <!-- Minutes Per Game -->
+            <div class="feature-card" id="card-mp_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Minutes Per Game</span>
+                  <span class="feat-short">MPG</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-mp_per_game" class="num-input" min="0" max="48" step="0.1" value="34.6">
+                  <span class="input-unit">min</span>
+                </div>
+              </div>
+              <input type="range" id="range-mp_per_game" class="range-slider" min="0" max="48" step="0.1" value="34.6">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 48.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 20.8</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 30.4 – 47.3</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 35.5</span>
+                </div>
+              </div>
+              <div class="feat-tip">Ranked #2 most important feature. Primary stars typically play 34+ MPG.</div>
+            </div>
+
+            <!-- Games Played -->
+            <div class="feature-card" id="card-g">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Games Played</span>
+                  <span class="feat-short">G</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-g" class="num-input" min="1" max="82" step="1" value="79">
+                  <span class="input-unit">games</span>
+                </div>
+              </div>
+              <input type="range" id="range-g" class="range-slider" min="1" max="82" step="1" value="79">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 1 – 82</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 52.4</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 49 – 82</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 78</span>
+                </div>
+              </div>
+              <div class="feat-tip">NBA modern eligibility threshold requires 65 games to qualify for awards.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Group: Shooting Efficiency -->
+        <div class="feature-category">
+          <div class="category-title">
+            <span class="cat-icon">🎯</span>
+            <h3>Shooting Efficiency</h3>
+            <span class="cat-tag">Ratio (0.000 to 1.000)</span>
+          </div>
+
+          <div class="features-grid">
+            <!-- Field Goal Percentage -->
+            <div class="feature-card" id="card-fg_percent">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Field Goal %</span>
+                  <span class="feat-short">FG%</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-fg_percent" class="num-input" min="0" max="1" step="0.001" value="0.583">
+                  <span class="input-unit">pct</span>
+                </div>
+              </div>
+              <input type="range" id="range-fg_percent" class="range-slider" min="0" max="1" step="0.001" value="0.583">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.000 – 1.000</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 0.444</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 0.378 – 0.683</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 0.525</span>
+                </div>
+              </div>
+              <div class="feat-tip">Input as decimal ratio (e.g. 0.525 = 52.5% field goal accuracy).</div>
+            </div>
+
+            <!-- 3-Point Percentage -->
+            <div class="feature-card" id="card-x3p_percent">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">3-Point %</span>
+                  <span class="feat-short">3P%</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-x3p_percent" class="num-input" min="0" max="1" step="0.001" value="0.359">
+                  <span class="input-unit">pct</span>
+                </div>
+              </div>
+              <input type="range" id="range-x3p_percent" class="range-slider" min="0" max="1" step="0.001" value="0.359">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.000 – 1.000</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 0.306</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 0.000 – 0.454</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 0.380</span>
+                </div>
+              </div>
+              <div class="feat-tip">Bigs/centers or pre-1980 eras may have 0.000. Elite shooters reach 0.400+.</div>
+            </div>
+
+            <!-- Free Throw Percentage -->
+            <div class="feature-card" id="card-ft_percent">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Free Throw %</span>
+                  <span class="feat-short">FT%</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-ft_percent" class="num-input" min="0" max="1" step="0.001" value="0.817">
+                  <span class="input-unit">pct</span>
+                </div>
+              </div>
+              <input type="range" id="range-ft_percent" class="range-slider" min="0" max="1" step="0.001" value="0.817">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.000 – 1.000</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 0.750</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 0.380 – 0.921</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 0.850</span>
+                </div>
+              </div>
+              <div class="feat-tip">Free throw accuracy ratio. Historical MVPs average 78.0%.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Group: Rebounds, Playmaking & Defense -->
+        <div class="feature-category">
+          <div class="category-title">
+            <span class="cat-icon">🛡️</span>
+            <h3>Playmaking & Defense</h3>
+            <span class="cat-tag">All-Around Production</span>
+          </div>
+
+          <div class="features-grid">
+            <!-- Total Rebounds Per Game -->
+            <div class="feature-card" id="card-trb_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Total Rebounds</span>
+                  <span class="feat-short">TRB</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-trb_per_game" class="num-input" min="0" max="30" step="0.1" value="12.4">
+                  <span class="input-unit">reb</span>
+                </div>
+              </div>
+              <input type="range" id="range-trb_per_game" class="range-slider" min="0" max="30" step="0.1" value="12.4">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 30.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 3.8</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 3.3 – 27.0</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 10.5</span>
+                </div>
+              </div>
+              <div class="feat-tip">Guards average 4–7 TRB; MVP big men routinely average 10–14 TRB.</div>
+            </div>
+
+            <!-- Assists Per Game -->
+            <div class="feature-card" id="card-ast_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Assists Per Game</span>
+                  <span class="feat-short">AST</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-ast_per_game" class="num-input" min="0" max="20" step="0.1" value="9.0">
+                  <span class="input-unit">ast</span>
+                </div>
+              </div>
+              <input type="range" id="range-ast_per_game" class="range-slider" min="0" max="20" step="0.1" value="9.0">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 20.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 2.0</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 1.3 – 12.8</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 8.0</span>
+                </div>
+              </div>
+              <div class="feat-tip">Playmaking impact. Point-forward/guard MVPs typically generate 7–12 AST.</div>
+            </div>
+
+            <!-- Steals Per Game -->
+            <div class="feature-card" id="card-stl_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Steals Per Game</span>
+                  <span class="feat-short">STL</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-stl_per_game" class="num-input" min="0" max="5" step="0.1" value="1.4">
+                  <span class="input-unit">stl</span>
+                </div>
+              </div>
+              <input type="range" id="range-stl_per_game" class="range-slider" min="0" max="5" step="0.1" value="1.4">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 5.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 0.7</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 0.5 – 3.2</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 1.4</span>
+                </div>
+              </div>
+              <div class="feat-tip">Perimeter defensive disruption. All-defensive MVPs reach 1.5–2.5 STL.</div>
+            </div>
+
+            <!-- Blocks Per Game -->
+            <div class="feature-card" id="card-blk_per_game">
+              <div class="feature-card-header">
+                <div class="feat-name-wrap">
+                  <span class="feat-name">Blocks Per Game</span>
+                  <span class="feat-short">BLK</span>
+                </div>
+                <div class="input-wrap">
+                  <input type="number" id="input-blk_per_game" class="num-input" min="0" max="6" step="0.1" value="0.9">
+                  <span class="input-unit">blk</span>
+                </div>
+              </div>
+              <input type="range" id="range-blk_per_game" class="range-slider" min="0" max="6" step="0.1" value="0.9">
+              <div class="feature-meta">
+                <div class="meta-row">
+                  <span class="meta-item"><strong class="meta-label">Limit:</strong> 0.0 – 6.0</span>
+                  <span class="meta-item"><strong class="meta-label">League Avg:</strong> 0.4</span>
+                </div>
+                <div class="meta-row highlight-meta">
+                  <span class="meta-item"><strong class="meta-label">MVP Range:</strong> 0.1 – 4.1</span>
+                  <span class="meta-item"><strong class="meta-label">Example:</strong> 1.2</span>
+                </div>
+              </div>
+              <div class="feat-tip">Interior rim protection metric. Big men MVPs average 1.5–3.5 BLK.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions-bar">
+          <button type="button" class="btn btn-primary" id="btn-predict" onclick="window.runPrediction()">
+            <span class="btn-icon">⚡</span> Execute Model Prediction
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-reset" onclick="window.resetToExample()">
+            <span class="btn-icon">🔄</span> Reset to Defaults
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Right Column: Prediction Output & Analytics Dashboard -->
+    <section class="panel output-panel">
+      <!-- Main Verdict Banner -->
+      <div class="verdict-banner" id="verdict-card">
+        <div class="verdict-header">
+          <span class="verdict-eyebrow" id="verdict-model-label">RANDOM FOREST CLASSIFICATION</span>
+          <span class="verdict-timestamp" id="verdict-time">Live Sync</span>
+        </div>
+
+        <div class="verdict-main-row">
+          <div class="verdict-icon-wrap" id="verdict-icon">🏆</div>
+          <div class="verdict-text-wrap">
+            <h2 class="verdict-status" id="verdict-title">PREDICTED MVP: YES</h2>
+            <p class="verdict-subtitle" id="verdict-subtext">Player demonstrates historic Most Valuable Player caliber statistical dominance.</p>
+          </div>
+        </div>
+
+        <!-- Progress Gauge -->
+        <div class="score-gauge-container">
+          <div class="score-header">
+            <span class="score-title">MVP Likelihood Confidence Score:</span>
+            <span class="score-value" id="score-val">79.0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="score-bar" style="width: 79%;"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>0% (Bench)</span>
+            <span>25% (Contender)</span>
+            <span>50% (Finalist)</span>
+            <span>100% (Unanimous Tier)</span>
+          </div>
+        </div>
+
+        <!-- Eligibility Warning (e.g. Games Played) -->
+        <div class="alert-box" id="eligibility-alert" style="display: none;">
+          <span class="alert-icon">⚠️</span>
+          <span class="alert-text" id="alert-message">Notice: Under 65 games played.</span>
+        </div>
+      </div>
+
+      <!-- Models Consensus Breakdown -->
+      <div class="output-card">
+        <div class="card-header-row">
+          <h3 class="card-heading">Machine Learning Models Consensus</h3>
+          <span class="card-badge">3 Algorithms</span>
+        </div>
+        <div class="consensus-grid">
+          <!-- Random Forest -->
+          <div class="model-stat-box" id="box-rf">
+            <div class="model-box-top">
+              <span class="model-name">Random Forest</span>
+              <span class="model-rank-badge rank-best">#1 Rank</span>
+            </div>
+            <div class="model-verdict-pill mvp-pill" id="pill-rf">MVP: YES</div>
+            <div class="model-prob-row">
+              <span>Class Probability:</span>
+              <strong id="prob-rf">79.0%</strong>
+            </div>
+            <div class="model-tier" id="tier-rf">Top 1-2 Tier</div>
+          </div>
+
+          <!-- Logistic Regression -->
+          <div class="model-stat-box" id="box-logreg">
+            <div class="model-box-top">
+              <span class="model-name">Logistic Regression</span>
+              <span class="model-rank-badge">Baseline</span>
+            </div>
+            <div class="model-verdict-pill mvp-pill" id="pill-logreg">MVP: YES</div>
+            <div class="model-prob-row">
+              <span>Class Probability:</span>
+              <strong id="prob-logreg">100.0%</strong>
+            </div>
+            <div class="model-tier" id="tier-logreg">High</div>
+          </div>
+
+          <!-- Naive Bayes -->
+          <div class="model-stat-box" id="box-nb">
+            <div class="model-box-top">
+              <span class="model-name">Naive Bayes</span>
+              <span class="model-rank-badge">Probabilistic</span>
+            </div>
+            <div class="model-verdict-pill mvp-pill" id="pill-nb">MVP: YES</div>
+            <div class="model-prob-row">
+              <span>Class Probability:</span>
+              <strong id="prob-nb">100.0%</strong>
+            </div>
+            <div class="model-tier" id="tier-nb">High</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison vs Historical MVP Benchmarks -->
+      <div class="output-card">
+        <div class="card-header-row">
+          <h3 class="card-heading">Stat Comparison vs Historical MVP Winners</h3>
+          <span class="card-badge">70 MVP Averages</span>
+        </div>
+        <p class="card-desc">How this player's stats compare against the 70 historical NBA MVP winners (1956–2025):</p>
+        <div class="benchmarks-grid" id="benchmarks-container">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Feature Importance Insights -->
+      <div class="output-card">
+        <div class="card-header-row">
+          <h3 class="card-heading">Random Forest Feature Importance Weights</h3>
+          <span class="card-badge">Predictive Influence</span>
+        </div>
+        <p class="card-desc">Features ranked by relative contribution to the Random Forest model's voting decisions:</p>
+        <div class="importance-list" id="importance-container">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Scouting Report Insights -->
+      <div class="output-card">
+        <div class="card-header-row">
+          <h3 class="card-heading">Automated Scouting & Analytics Notes</h3>
+          <span class="card-badge">Diagnostic</span>
+        </div>
+        <ul class="insights-list" id="insights-container">
+          <!-- Dynamically populated -->
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>NBA MVP Machine Learning Project • Classification & Ranking Analysis</p>
+      <p class="footer-sub">Trained on official Basketball-Reference statistics covering 1956 through 2025.</p>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
